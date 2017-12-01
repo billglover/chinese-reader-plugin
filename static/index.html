@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <title>Chinese Reader</title>
+   <style>
+      textarea {
+         width: 50%;
+         height: 10em;
+         display: block;
+         margin: 1em;
+      }
+
+      #submit {
+         display: block;
+         margin: 1em;
+         padding-left: 1em;
+      }
+
+      #markup {
+         margin: 1em;
+         border: 1px solid #333;
+         background-color: #eee;
+         width: 50%;
+         min-height: 10em;
+         padding: 0.5em;
+      }
+
+      #markup b {
+         font-weight: normal;
+         color: rgb(91, 0, 170);
+      }
+
+      #score {
+         margin: 1em;
+         border: 1px solid #006;
+         background-color: #eef;
+         width: 50%;
+         height: 1em;
+         padding: 0.5em;
+      }
+   </style>
+</head>
+<body>
+   <h1>Chinese Reader</h1>
+   <textarea></textarea>
+   <input type="submit" value="Submit" onclick="sendData()" />
+   <div id="markup"></div>
+   <div id="score"></div>
+</body>
+
+<script>
+function sendData() {
+
+   var val = $.trim($("textarea").val());
+   var data = {
+      "text": val
+      }
+
+   fetch("http://localhost:8080/api", {
+   	method: 'post',
+	   body: JSON.stringify(data)
+   }).then(function(response) {
+      return response.json();
+   }).then(function(data) {
+      render(data)
+   }).catch(function() {
+      console.log("Booo");
+   });
+}
+
+function render(data) {
+   console.log(data);
+   $("#markup").html(data.markup);
+   $("#score").html(data.readability + "%");
+}
+
+</script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+</html>
