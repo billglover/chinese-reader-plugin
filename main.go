@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"unicode"
 )
 
 type Request struct {
@@ -56,6 +57,7 @@ func scoreText(t string) (int, string) {
 
 	markup := ""
 	score := 0
+	count := 0
 
 	f, err := os.Open("data/words.txt")
 	if err != nil {
@@ -81,19 +83,28 @@ func scoreText(t string) (int, string) {
 	}
 
 	for _, c := range []rune(t) {
-		if ok := words[string(c)]; ok != true {
-			markup = markup + string(c)
-			continue
+		if unicode.Is(unicode.Han, c) == true {
+
+			count++
+
+			if ok := words[string(c)]; ok == true {
+				score++
+				markup = markup + "<b>" + string(c) + "</b>"
+				continue
+			}
+
 		}
-		score++
-		markup = markup + "<b>" + string(c) + "</b>"
+		markup = markup + string(c)
 	}
 
 	if len(t) == 0 {
 		return 0, markup
 	}
 
-	score = score * 100 / len(t)
+	fmt.Println("score:", score)
+	fmt.Println("count:", count)
+
+	score = score * 100 / count
 	return score, markup
 }
 
