@@ -1,80 +1,109 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-   <meta charset="UTF-8">
-   <title>Chinese Reader</title>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+   
+   <link rel="stylesheet" href="css/bootstrap.min.css">
+   
    <style>
-      textarea {
-         width: 50%;
-         height: 10em;
-         display: block;
-         margin: 1em;
-      }
-
-      #submit {
-         display: block;
-         margin: 1em;
-         padding-left: 1em;
-      }
-
-      #markup {
-         margin: 1em;
-         border: 1px solid #333;
-         background-color: #eee;
-         width: 50%;
-         min-height: 10em;
-         padding: 0.5em;
-      }
-
-      #markup b {
-         font-weight: normal;
-         color: rgb(91, 0, 170);
-      }
-
-      #score {
-         margin: 1em;
-         border: 1px solid #006;
-         background-color: #eef;
-         width: 50%;
-         height: 1em;
-         padding: 0.5em;
-      }
+      body {
+         padding-top: 5rem;
+      }      
    </style>
+   
+   <title>Chinese Reader</title>
 </head>
 <body>
-   <h1>Chinese Reader</h1>
-   <textarea></textarea>
-   <input type="submit" value="Submit" onclick="sendData()" />
-   <div id="markup"></div>
-   <div id="score"></div>
+   
+   <!-- nav bar -->
+   <!-- <nav class="navbar navbar-dark bg-dark fixed-top">
+      <a class="navbar-brand" href="#">Chinese Reader</a>
+      
+      
+   </nav> -->
+   <nav class="nav navbar-dark bg-dark fixed-top">
+      <a class="nav-link navbar-brand" href="#">Chinese Reader</a>
+      
+      <ul class="navbar-nav mr-auto">
+         <li class="nav-item">
+            <a class="nav-link" href="https://github.com/billglover/chinese-reader">Code</a>
+         </li>
+      </ul>
+      
+   </nav>
+   
+   <!-- main content -->
+   <div class="container">
+      <h1>Chinese Reader</h1>
+      <p class="lead">Read Chinese text with confidence.</p>
+      
+      <div class="row">
+         <div class="col-12">
+            <h2>Original text</h2>
+            <form>
+               <div class="row">
+                  <textarea class="form-control form-control-lg" id="originalText" rows="7"></textarea>
+               </div>
+               <div class="row">
+                  <button class="btn btn-primary" type="submit" onclick="sendData()">Submit text</button>
+               </div>
+               
+            </form>
+         </div>
+      </div>
+      
+      <div class="row">
+         <h2>Original text</h2>
+         <div class="col-12">
+            <div id="markup"></div>   
+         </div>
+      </div>
+      
+      <div class="row">
+         <div class="col-12">
+            <div class="bg-info" id="score">
+               
+            </div>
+         </div>
+      </div>
+      
+   </div>
+</div>
+
 </body>
 
+<!-- the scripts -->
+<script src="js/jquery.min.js"></script>
+<script src="js/popper.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+
 <script>
-function sendData() {
-
-   var val = $.trim($("textarea").val());
-   var data = {
-      "text": val
+   function sendData() {
+      
+      var val = $.trim($("#originalText").val());
+      var data = {
+         "text": val
       }
-
-   fetch("http://localhost:8080/api", {
-   	method: 'post',
-	   body: JSON.stringify(data)
-   }).then(function(response) {
-      return response.json();
-   }).then(function(data) {
-      render(data)
-   }).catch(function() {
-      console.log("Booo");
-   });
-}
-
-function render(data) {
-   console.log(data);
-   $("#markup").html(data.markup);
-   $("#score").html(data.readability + "%");
-}
-
+      
+      fetch("http://localhost:8080/api", {
+         method: 'post',
+         body: JSON.stringify(data)
+      }).then(function(response) {
+         return response.json();
+      }).then(function(data) {
+         render(data)
+      }).catch(function() {
+         console.log("Booo");
+      });
+   }
+   
+   function render(data) {
+      console.log(data);
+      $("#markup").html(data.markup);
+      $("#score").html(data.readability + "%");
+   }
+   
 </script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
 </html>
