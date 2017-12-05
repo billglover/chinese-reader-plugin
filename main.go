@@ -89,7 +89,7 @@ func scoreText(t string) (int, string) {
 
 			if ok := words[string(c)]; ok == true {
 				score++
-				markup = markup + "<b>" + string(c) + "</b>"
+				markup = markup + "<mark>" + string(c) + "</mark>"
 				continue
 			}
 
