@@ -9,7 +9,17 @@
    <style>
       body {
          padding-top: 5rem;
-      }      
+      }
+
+      #originalText {
+    border: none;
+    overflow: auto;
+    outline: none;
+
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
+    box-shadow: none;
+}
    </style>
    
    <title>Chinese Reader</title>
@@ -17,11 +27,6 @@
 <body>
    
    <!-- nav bar -->
-   <!-- <nav class="navbar navbar-dark bg-dark fixed-top">
-      <a class="navbar-brand" href="#">Chinese Reader</a>
-      
-      
-   </nav> -->
    <nav class="nav navbar-dark bg-dark fixed-top">
       <a class="nav-link navbar-brand" href="#">Chinese Reader</a>
       
@@ -39,32 +44,26 @@
       <p class="lead">Read Chinese text with confidence.</p>
       
       <div class="row">
-         <div class="col-12">
-            <h2>Original text</h2>
+         <div class="col-6">
+            <h4>Original text</h4>
             <form>
-               <div class="row">
-                  <textarea class="form-control form-control-lg" id="originalText" rows="7"></textarea>
+               <div class="form-group">
+                  <div class="lead bg-light" id="originalText" contenteditable></div>
                </div>
-               <div class="row">
-                  <button class="btn btn-primary" type="submit" onclick="sendData()">Submit text</button>
-               </div>
-               
             </form>
          </div>
-      </div>
-      
-      <div class="row">
-         <h2>Original text</h2>
-         <div class="col-12">
-            <div id="markup"></div>   
-         </div>
-      </div>
-      
-      <div class="row">
-         <div class="col-12">
-            <div class="bg-info" id="score">
-               
+
+         <div class="col-6">
+               <h4>Readable text</h4>
+               <div class="lead" id="markedUpText" rows="7"></div>
             </div>
+      </div>
+      
+      <div class="mt-3"></div>
+      
+      <div class="row markup invisible">
+         <div class="col-12">
+            <div class="alert alert-primary" role="alert" id="score"></div>
          </div>
       </div>
       
@@ -79,9 +78,38 @@
 <script src="js/bootstrap.min.js"></script>
 
 <script>
+   //setup before functions
+   var typingTimer;                //timer identifier
+   var doneTypingInterval = 50;  //time in ms, 5 second for example
+   var $input = $("#originalText");
+   
+   //on keyup, start the countdown
+   $input.on('keyup', function () {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(doneTyping, doneTypingInterval);
+   });
+   
+   //on keydown, clear the countdown 
+   $input.on('keydown', function () {
+      clearTimeout(typingTimer);
+   });
+   
+   //user is "finished typing," do something
+   function doneTyping () {
+      sendData()
+   }
+   
    function sendData() {
       
-      var val = $.trim($("#originalText").val());
+      var val = $("#originalText").html();
+
+      if ($("#originalText").text().length == 0) {
+         $("#markedUpText").html("");
+         $("#score").html("");
+         $(".markup").addClass("invisible")
+         return
+      }
+
       var data = {
          "text": val
       }
@@ -100,8 +128,9 @@
    
    function render(data) {
       console.log(data);
-      $("#markup").html(data.markup);
-      $("#score").html(data.readability + "%");
+      $("#markedUpText").html(data.markup);
+      $("#score").html("Readability: " + data.readability + "%");
+      $(".markup").removeClass("invisible")
    }
    
 </script>

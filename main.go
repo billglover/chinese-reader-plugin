@@ -37,7 +37,7 @@ func handleRequest(rw http.ResponseWriter, req *http.Request) {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 	}
 
-	fmt.Println(mreq)
+	//fmt.Println(mreq)
 
 	score, markup := scoreText(mreq.Text)
 
@@ -82,14 +82,14 @@ func scoreText(t string) (int, string) {
 		}
 	}
 
-	for _, c := range []rune(t) {
+	for _, c := range t {
 		if unicode.Is(unicode.Han, c) == true {
 
 			count++
 
 			if ok := words[string(c)]; ok == true {
 				score++
-				markup = markup + "<mark>" + string(c) + "</mark>"
+				markup = markup + "<span class=\"border border-primary text-primary\">" + string(c) + "</span>"
 				continue
 			}
 
@@ -104,6 +104,9 @@ func scoreText(t string) (int, string) {
 	fmt.Println("score:", score)
 	fmt.Println("count:", count)
 
+	if count == 0 {
+		return 0, markup
+	}
 	score = score * 100 / count
 	return score, markup
 }
