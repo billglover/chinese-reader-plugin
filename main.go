@@ -1,4 +1,4 @@
-package main
+package chinese_reader
 
 import (
 	"encoding/json"
@@ -68,8 +68,6 @@ func GetKnown() string {
 	return string(b)
 }
 
-func main() {
+func init() {
 	http.HandleFunc("/api", handleRequest)
-	http.Handle("/", http.FileServer(http.Dir("./static")))
-	log.Fatal(http.ListenAndServe(":8080", nil))
 }
