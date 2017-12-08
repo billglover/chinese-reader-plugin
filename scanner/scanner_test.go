@@ -16,7 +16,7 @@ func TestScanSingleChar(t *testing.T) {
 
 	text := "我知道一，二，三，四，和五，八点吧。"
 	dScore := 50
-	dMarkup := "我知道<b>一</b>，<b>二</b>，<b>三</b>，<b>四</b>，和<b>五</b>，<b>八</b>点吧。"
+	dMarkup := "我知道<span class=\"text-primary border border-primary\">一</span>，<span class=\"text-primary border border-primary\">二</span>，<span class=\"text-primary border border-primary\">三</span>，<span class=\"text-primary border border-primary\">四</span>，和<span class=\"text-primary border border-primary\">五</span>，<span class=\"text-primary border border-primary\">八</span>点吧。"
 
 	score, markup, err := Scan(text, known)
 	if err != nil {

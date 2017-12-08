@@ -42,7 +42,7 @@ out:
 
 		for mi := max; mi > i; mi-- {
 			if ws[string(rs[i:mi])] == true {
-				markup = markup + "<b>" + string(rs[i:mi]) + "</b>"
+				markup = markup + "<span class=\"text-primary border border-primary\">" + string(rs[i:mi]) + "</span>"
 				found += (mi - i)
 				i = mi - 1
 				continue out
