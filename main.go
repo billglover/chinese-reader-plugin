@@ -1,4 +1,4 @@
-package main
+package chinese_reader
 
 import (
 	"bufio"
@@ -36,8 +36,6 @@ func handleRequest(rw http.ResponseWriter, req *http.Request) {
 		log.Println(err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 	}
-
-	//fmt.Println(mreq)
 
 	score, markup := scoreText(mreq.Text)
 
@@ -101,9 +99,6 @@ func scoreText(t string) (int, string) {
 		return 0, markup
 	}
 
-	fmt.Println("score:", score)
-	fmt.Println("count:", count)
-
 	if count == 0 {
 		return 0, markup
 	}
@@ -111,8 +106,6 @@ func scoreText(t string) (int, string) {
 	return score, markup
 }
 
-func main() {
+func init() {
 	http.HandleFunc("/api", handleRequest)
-	http.Handle("/", http.FileServer(http.Dir("./static")))
-	log.Fatal(http.ListenAndServe(":8080", nil))
 }
