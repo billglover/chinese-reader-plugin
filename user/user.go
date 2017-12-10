@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
+	"path"
 	"time"
 
 	"github.com/billglover/uid"
@@ -36,13 +36,13 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// create a key for the user object
-		c := appengine.NewContext(r)
-		userKey := datastore.NewKey(c, "users", u.ID, 0, nil)
+		ctx := appengine.NewContext(r)
+		userKey := datastore.NewKey(ctx, "users", u.ID, 0, nil)
 
 		// TODO: check payment before creating a user record
 
 		// create the user record
-		k, err := datastore.Put(c, userKey, &u)
+		k, err := datastore.Put(ctx, userKey, &u)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -58,13 +58,31 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
 
-		// TODO: check for ID in the path
-		// these needs to be done safely
-		id := strings.Split(r.URL.Path, "/")
-		log.Println(id[1])
+		id := path.Base(r.URL.Path)
+
+		// if the ID is empty we consider it an invalid request
+		if id == "." || id == "/" {
+			http.Error(w, "missing user token", http.StatusBadRequest)
+			return
+		}
+
+		// create a key based on the supplied user ID and query datastore
+		ctx := appengine.NewContext(r)
+		userKey := datastore.NewKey(ctx, "users", id, 0, nil)
+
+		u := new(User)
+		if err := datastore.Get(ctx, userKey, u); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// return the user record as a JSON object
+		header := w.Header()
+		header.Add("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(u)
 		return
 	}
 
 	// respond to indicate that the method is not implemented
-	http.Error(w, "not implemented", http.StatusNotImplemented)
+	http.Error(w, "method not implemented", http.StatusNotImplemented)
 }
