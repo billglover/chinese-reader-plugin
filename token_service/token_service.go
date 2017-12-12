@@ -6,9 +6,9 @@ import (
 	"net"
 
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 
 	tm "github.com/billglover/chinese-reader/token_manager"
-	"google.golang.org/grpc"
 )
 
 type TokenManagerServer struct{}
@@ -18,7 +18,7 @@ func init() {
 	var lis net.Listener
 	var grpcServer *grpc.Server
 
-	lis, err = net.Listen("tcp", ":8080")
+	lis, err = net.Listen("tcp", "")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
