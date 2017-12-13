@@ -5,9 +5,17 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"google.golang.org/appengine/aetest"
 )
 
 func TestCreateToken(t *testing.T) {
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
 	req, _ := http.NewRequest("POST", "/token", nil)
 	response := executeRequest(req)
 
