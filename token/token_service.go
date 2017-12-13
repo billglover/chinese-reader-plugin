@@ -1,12 +1,16 @@
 package token
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/billglover/uid"
 	"github.com/gorilla/mux"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/log"
 )
 
 type Token struct {
@@ -16,12 +20,15 @@ type Token struct {
 }
 
 func init() {
-	r := register()
+	r := register(context.Background())
 	http.Handle("/", r)
 }
 
-func register() *mux.Router {
+func register(ctx context.Context) *mux.Router {
 	r := mux.NewRouter()
+
+	// TODO: pass context function to handler
+
 	r.HandleFunc("/token", PostTokenHandler).Methods("POST")
 	r.HandleFunc("/token/{id}", GetTokenHandler).Methods("GET")
 	//r.HandleFunc("/token/{id}", PutTokenHandler).Methods("PUT")
@@ -35,6 +42,16 @@ func PostTokenHandler(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 	t := Token{ID: id}
+
+	ctx := appengine.NewContext(r)
+	tokenKey := datastore.NewKey(ctx, "tokens", t.ID, 0, nil)
+
+	k, err := datastore.Put(ctx, tokenKey, &t)
+	if err != nil {
+		log.Errorf(ctx, "unable to create token: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	log.Infof(ctx, "created token: %s", k.StringID())
 
 	respondWithJSON(w, http.StatusCreated, t)
 }
