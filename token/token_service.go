@@ -32,7 +32,7 @@ func init() {
 	r := mux.NewRouter()
 	r.HandleFunc("/token", PostTokenHandler).Methods("POST")
 	r.HandleFunc("/token/{id}", GetTokenHandler).Methods("GET")
-	//r.HandleFunc("/token/{id}", PutTokenHandler).Methods("PUT")
+	r.HandleFunc("/token/{id}", PatchTokenHandler).Methods("PATCH")
 
 	http.Handle("/", r)
 }
@@ -69,22 +69,58 @@ func PostTokenHandler(w http.ResponseWriter, r *http.Request) {
 // GetTokenHandler handles an HTTP GET request. It returns the token
 // that corresponds to the ID provided in the path.
 func GetTokenHandler(w http.ResponseWriter, r *http.Request) {
-
+	ctx := appengine.NewContext(r)
 	var t Token
 
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	ctx := appengine.NewContext(r)
 	tokenKey := datastore.NewKey(ctx, "tokens", id, 0, nil)
-	log.Infof(ctx, tokenKey.String())
 	if err := datastore.Get(ctx, tokenKey, &t); err != nil {
-		log.Errorf(ctx, "unable to locate new token: %v", err)
+		log.Errorf(ctx, "unable to locate token: %v", err)
 		respondWithError(w, http.StatusNotFound, "unable to locate token")
 		return
 	}
 
 	respondWithJSON(w, http.StatusOK, t)
+}
+
+// PatchTokenHandler handles an update to the remaining use counter. It ensures that the
+// counter can only be reduced by 1 on each update. All other update requests are
+// treated as invalid.
+func PatchTokenHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+	var t Token
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	action := r.URL.Query().Get("action")
+	if action != "use" {
+		log.Errorf(ctx, "invalid action requested")
+		respondWithError(w, http.StatusBadRequest, "invalid action requested")
+		return
+	}
+
+	tokenKey := datastore.NewKey(ctx, "tokens", id, 0, nil)
+	if err := datastore.Get(ctx, tokenKey, &t); err != nil {
+		log.Errorf(ctx, "unable to locate token: %v", err)
+		respondWithError(w, http.StatusNotFound, "unable to locate token")
+		return
+	}
+
+	t.Remaining--
+
+	resultKey, err := datastore.Put(ctx, tokenKey, &t)
+	if err != nil {
+		log.Errorf(ctx, "unable to modify token: %v", err)
+		respondWithError(w, http.StatusInternalServerError, "unable to modify token")
+		return
+	}
+
+	log.Infof(ctx, "used token: %s, remaining: %d", resultKey.StringID(), t.Remaining)
+	respondWithJSON(w, http.StatusOK, t)
+
 }
 
 // RespondWithError is a helper function that sets the HTTP status code and returns
