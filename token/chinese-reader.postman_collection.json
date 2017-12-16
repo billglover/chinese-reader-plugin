@@ -1,0 +1,224 @@
+{
+	"info": {
+		"name": "chinese-reader",
+		"_postman_id": "bab9ed70-bd05-a2a6-da63-284226175bb2",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "http://{{hostname}}:{{port}}/token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "6e363fd6-6961-44fe-9b7a-48110bc8c314",
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([201,202]);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Content-Type is present\", function () {",
+							"    pm.response.to.have.header(\"Content-Type\");",
+							"});",
+							"",
+							"var jsonData = pm.response.json();",
+							"",
+							"var schema = {",
+							"  \"items\": {",
+							"    \"id\": \"string\",",
+							"    \"created\": \"string\",",
+							"    \"expires\": \"string\",",
+							"    \"remaining\": \"int\",",
+							"    \"valid\": \"bool\"",
+							"  }",
+							"};",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(jsonData, schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Token is valid\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.valid).to.eql(true);",
+							"});",
+							"",
+							"pm.test(\"Token has 1000 uses remaining\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.remaining).to.eql(1000);",
+							"});",
+							"",
+							"pm.globals.set(\"token_id\", jsonData.id);",
+							"pm.globals.set(\"token_remaining\", jsonData.remaining);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://{{hostname}}:{{port}}/token",
+					"protocol": "http",
+					"host": [
+						"{{hostname}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"token"
+					]
+				},
+				"description": "Create a new user token valid for the default number of uses and valid for the default expiry time."
+			},
+			"response": []
+		},
+		{
+			"name": "http://{{hostname}}:{{port}}/token/{{token_id}}",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "e34364c6-c65c-4916-b909-7588bf1be938",
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"Successful GET request\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Content-Type is present\", function () {",
+							"    pm.response.to.have.header(\"Content-Type\");",
+							"});",
+							"",
+							"var jsonData = pm.response.json();",
+							"",
+							"var schema = {",
+							"  \"items\": {",
+							"    \"id\": \"string\",",
+							"    \"created\": \"string\",",
+							"    \"expires\": \"string\",",
+							"    \"remaining\": \"int\",",
+							"    \"valid\": \"bool\"",
+							"  }",
+							"};",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(jsonData, schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Token is valid\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.valid).to.eql(true);",
+							"});",
+							"",
+							"pm.test(\"Token has the expected number of uses remaining\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.remaining).to.eql(pm.globals.get(\"token_remaining\"));",
+							"});",
+							"",
+							"pm.globals.set(\"token_id\", jsonData.id);",
+							"pm.globals.set(\"token_remaining\", jsonData.remaining);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://{{hostname}}:{{port}}/token/{{token_id}}",
+					"protocol": "http",
+					"host": [
+						"{{hostname}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"token",
+						"{{token_id}}"
+					]
+				},
+				"description": "Retrieve a token by using its ID."
+			},
+			"response": []
+		},
+		{
+			"name": "http://{{hostname}}:{{port}}/token/{{token_id}}?action=use",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "0d0c20a1-a338-4a00-93d2-48602b5ae43d",
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"Successful GET request\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Content-Type is present\", function () {",
+							"    pm.response.to.have.header(\"Content-Type\");",
+							"});",
+							"",
+							"var jsonData = pm.response.json();",
+							"",
+							"var schema = {",
+							"  \"items\": {",
+							"    \"id\": \"string\",",
+							"    \"created\": \"string\",",
+							"    \"expires\": \"string\",",
+							"    \"remaining\": \"int\",",
+							"    \"valid\": \"bool\"",
+							"  }",
+							"};",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(jsonData, schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Token is valid\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.valid).to.eql(true);",
+							"});",
+							"",
+							"pm.test(\"Token has the expected number of uses remaining\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.remaining).to.eql(pm.globals.get(\"token_remaining\")-1);",
+							"});",
+							"",
+							"pm.globals.set(\"token_id\", jsonData.id);",
+							"pm.globals.set(\"token_remaining\", jsonData.remaining);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "http://{{hostname}}:{{port}}/token/{{token_id}}?action=use",
+					"protocol": "http",
+					"host": [
+						"{{hostname}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"token",
+						"{{token_id}}"
+					],
+					"query": [
+						{
+							"key": "action",
+							"value": "use",
+							"equals": true
+						}
+					]
+				},
+				"description": "Use a token based on its ID. This reduces the remaining number of uses by 1."
+			},
+			"response": []
+		}
+	]
+}
