@@ -14,9 +14,18 @@ import (
 )
 
 const (
-	// DefaultTokenCount specifies the number of uses assigned to new tokens
+	// TokenCount specifies the number of uses assigned to new tokens
 	// by default. Changing this value does not impact existing tokens.
-	DefaultTokenCount int = 100
+	TokenCount int = 1000
+
+	// TokenExpiryYears specifies the number of years after which a token should expire
+	TokenExpiryYears int = 1
+
+	// TokenExpiryMonths specifies the number of months after which a token should expire
+	TokenExpiryMonths int = 0
+
+	// TokenExpiryDays specifies the number of days after which a token should expire
+	TokenExpiryDays int = 0
 )
 
 // Token is a struct that holds details of a user token. Tokens have a unique
@@ -25,7 +34,9 @@ const (
 type Token struct {
 	ID        string    `json:"id,omitempty"`
 	Created   time.Time `json:"created,omitempty"`
-	Remaining int       `json:"remaining,omitempty"`
+	Expires   time.Time `json:"expires,omitempty"`
+	Remaining int       `json:"remaining"`
+	Valid     bool      `datastore:"-" json:"valid"`
 }
 
 func init() {
@@ -47,10 +58,13 @@ func PostTokenHandler(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 
+	now := time.Now()
+
 	t := Token{
 		ID:        id,
-		Created:   time.Now(),
-		Remaining: DefaultTokenCount,
+		Created:   now,
+		Expires:   now.AddDate(TokenExpiryYears, TokenExpiryMonths, TokenExpiryDays),
+		Remaining: TokenCount,
 	}
 
 	ctx := appengine.NewContext(r)
@@ -62,6 +76,7 @@ func PostTokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	t.Valid = t.IsValid()
 	log.Infof(ctx, "created token: %s", resultKey.StringID())
 	respondWithJSON(w, http.StatusCreated, t)
 }
@@ -79,6 +94,13 @@ func GetTokenHandler(w http.ResponseWriter, r *http.Request) {
 	if err := datastore.Get(ctx, tokenKey, &t); err != nil {
 		log.Errorf(ctx, "unable to locate token: %v", err)
 		respondWithError(w, http.StatusNotFound, "unable to locate token")
+		return
+	}
+
+	t.Valid = t.IsValid()
+	if t.Valid == false {
+		log.Infof(ctx, "unable to retrieve invalid token: %s, expired: %s, remaining: %d", t.ID, t.Expires, t.Remaining)
+		respondWithJSON(w, http.StatusGone, t)
 		return
 	}
 
@@ -109,7 +131,19 @@ func PatchTokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// check the token is valid before any updates are made
+	t.Valid = t.IsValid()
+	if t.Valid == false {
+		log.Infof(ctx, "unable to use invalid token: %s, expired: %s, remaining: %d", t.ID, t.Expires, t.Remaining)
+		respondWithJSON(w, http.StatusGone, t)
+		return
+	}
+
+	// reduce the number of remaining uses but cap at 0
 	t.Remaining--
+	if t.Remaining < 0 {
+		t.Remaining = 0
+	}
 
 	resultKey, err := datastore.Put(ctx, tokenKey, &t)
 	if err != nil {
@@ -120,7 +154,6 @@ func PatchTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Infof(ctx, "used token: %s, remaining: %d", resultKey.StringID(), t.Remaining)
 	respondWithJSON(w, http.StatusOK, t)
-
 }
 
 // RespondWithError is a helper function that sets the HTTP status code and returns
@@ -137,4 +170,21 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
+}
+
+// IsValid takes a token and determines whether it is still valid
+func (t Token) IsValid() bool {
+	valid := true
+
+	// check we have remaining uses
+	if t.Remaining <= 0 {
+		valid = false
+	}
+
+	// check the date hasn't expired
+	if time.Now().After(t.Expires) {
+		valid = false
+	}
+
+	return valid
 }
