@@ -1,5 +1,5 @@
 ---
-service: users
+service: words
 runtime: go
 api_version: go1
 
