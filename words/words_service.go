@@ -59,6 +59,8 @@ func PostWordsHandler(w http.ResponseWriter, r *http.Request) {
 	bucketName, err := file.DefaultBucketName(ctx)
 	if err != nil {
 		log.Errorf(ctx, "failed to get default GCS bucket name: %v", err)
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("storage service failure: %v:", err))
+		return
 	}
 	bucket := client.Bucket(bucketName)
 
@@ -70,12 +72,18 @@ func PostWordsHandler(w http.ResponseWriter, r *http.Request) {
 
 	if _, err := io.Copy(objw, f); err != nil {
 		log.Errorf(ctx, "failed to copy file: %v", err.Error())
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("storage service failure: %v:", err))
+		return
 	}
 	if err := objw.Close(); err != nil {
 		log.Errorf(ctx, "failed to close storage object: %v", err.Error())
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("storage service failure: %v:", err))
+		return
 	}
 
 	f.Close()
+
+	respondWithJSON(w, http.StatusCreated, nil)
 }
 
 func GetWordsHandler(w http.ResponseWriter, r *http.Request) {
