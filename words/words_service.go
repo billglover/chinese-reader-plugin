@@ -18,6 +18,7 @@ func init() {
 	r.HandleFunc("/words", PostWordsHandler).Methods("POST")
 	r.HandleFunc("/words/{id}", GetWordsHandler).Methods("GET")
 	r.HandleFunc("/words/{id}", DeleteWordsHandler).Methods("DELETE")
+	r.HandleFunc("/words/{id}", PutWordsHandler).Methods("PUT")
 
 	http.Handle("/", r)
 }
@@ -160,4 +161,55 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
+}
+
+func PutWordsHandler(w http.ResponseWriter, r *http.Request) {
+
+	// TODO: check that the file exists before accepting files of an arbitrary name
+
+	ctx := appengine.NewContext(r)
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	f, _, err := r.FormFile("words")
+	if err == http.ErrMissingFile {
+		respondWithError(w, http.StatusBadRequest, "no file provided")
+		return
+	}
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("bad request: %v:", err))
+		return
+	}
+
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to get client: %v", err)
+	}
+
+	bucketName, err := file.DefaultBucketName(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to get default GCS bucket name: %v", err)
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("storage service failure: %v:", err))
+		return
+	}
+	bucket := client.Bucket(bucketName)
+
+	obj := bucket.Object(id)
+	objw := obj.NewWriter(ctx)
+
+	if _, err := io.Copy(objw, f); err != nil {
+		log.Errorf(ctx, "failed to copy file: %v", err.Error())
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("storage service failure: %v:", err))
+		return
+	}
+	if err := objw.Close(); err != nil {
+		log.Errorf(ctx, "failed to close storage object: %v", err.Error())
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("storage service failure: %v:", err))
+		return
+	}
+
+	f.Close()
+
+	respondWithJSON(w, http.StatusCreated, nil)
 }
