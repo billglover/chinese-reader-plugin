@@ -117,7 +117,34 @@ func GetWordsHandler(w http.ResponseWriter, r *http.Request) {
 	objr.Close()
 }
 
-func PatchWordsHandler(w http.ResponseWriter, r *http.Request) {
+func DeleteWordsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to get client: %v", err)
+	}
+
+	bucketName, err := file.DefaultBucketName(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to get default GCS bucket name: %v", err)
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("storage service failure: %v:", err))
+		return
+	}
+	bucket := client.Bucket(bucketName)
+
+	obj := bucket.Object(id)
+	err = obj.Delete(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to delete object: %v", err)
+		respondWithError(w, http.StatusNotFound, fmt.Sprintf("record not found: %s:", id))
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // RespondWithError is a helper function that sets the HTTP status code and returns
