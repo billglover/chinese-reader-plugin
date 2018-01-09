@@ -17,7 +17,7 @@ func init() {
 	r := mux.NewRouter()
 	r.HandleFunc("/words", PostWordsHandler).Methods("POST")
 	r.HandleFunc("/words/{id}", GetWordsHandler).Methods("GET")
-	r.HandleFunc("/words/{id}", PatchWordsHandler).Methods("PUT")
+	r.HandleFunc("/words/{id}", DeleteWordsHandler).Methods("DELETE")
 	r.HandleFunc("/modz", GetModzHandler).Methods("GET")
 
 	http.Handle("/", r)
@@ -92,8 +92,6 @@ func GetWordsHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	log.Infof(ctx, id)
-
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		log.Errorf(ctx, "failed to get client: %v", err)
@@ -111,6 +109,8 @@ func GetWordsHandler(w http.ResponseWriter, r *http.Request) {
 	objr, err := obj.NewReader(ctx)
 	if err != nil {
 		log.Errorf(ctx, "unable to read object: %v", err)
+		respondWithError(w, http.StatusNotFound, fmt.Sprintf("record not found: %s:", id))
+		return
 	}
 
 	io.Copy(w, objr)
