@@ -87,6 +87,34 @@ func PostWordsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetWordsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	log.Infof(ctx, id)
+
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to get client: %v", err)
+	}
+
+	bucketName, err := file.DefaultBucketName(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to get default GCS bucket name: %v", err)
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("storage service failure: %v:", err))
+		return
+	}
+	bucket := client.Bucket(bucketName)
+
+	obj := bucket.Object(id)
+	objr, err := obj.NewReader(ctx)
+	if err != nil {
+		log.Errorf(ctx, "unable to read object: %v", err)
+	}
+
+	io.Copy(w, objr)
+	objr.Close()
 }
 
 func PatchWordsHandler(w http.ResponseWriter, r *http.Request) {
