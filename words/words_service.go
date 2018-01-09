@@ -18,7 +18,6 @@ func init() {
 	r.HandleFunc("/words", PostWordsHandler).Methods("POST")
 	r.HandleFunc("/words/{id}", GetWordsHandler).Methods("GET")
 	r.HandleFunc("/words/{id}", DeleteWordsHandler).Methods("DELETE")
-	r.HandleFunc("/modz", GetModzHandler).Methods("GET")
 
 	http.Handle("/", r)
 }
@@ -161,16 +160,4 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
-}
-
-func GetModzHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
-
-	// TODO: Blog post this
-	m, err := appengine.ModuleHostname(ctx, "token", "", "")
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("unable to get module: %v:", err))
-		return
-	}
-	respondWithError(w, http.StatusOK, m)
 }
