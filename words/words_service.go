@@ -196,6 +196,15 @@ func PutWordsHandler(w http.ResponseWriter, r *http.Request) {
 	bucket := client.Bucket(bucketName)
 
 	obj := bucket.Object(id)
+
+	// check that the object exists
+	_, err = obj.Attrs(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to get file attributes: %v", err)
+		respondWithError(w, http.StatusNotFound, fmt.Sprintf("record not found: %s:", id))
+		return
+	}
+
 	objw := obj.NewWriter(ctx)
 
 	if _, err := io.Copy(objw, f); err != nil {
