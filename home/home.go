@@ -40,7 +40,14 @@ func handleRequest(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 	}
 
-	validateToken(ctx, mreq.Token)
+	valid, err := validateToken(ctx, mreq.Token)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	}
+
+	if valid == false {
+		http.Error(rw, "invalid token", http.StatusUnauthorized)
+	}
 }
 
 func init() {
@@ -69,12 +76,16 @@ func validateToken(ctx context.Context, token string) (bool, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return false, fmt.Errorf("unable to read response from internal service")
+	// body, err := ioutil.ReadAll(resp.Body)
+	// if err != nil {
+	// 	return false, fmt.Errorf("unable to read response from internal service")
+	// }
+
+	// fmt.Println(string(body))
+
+	if resp.StatusCode != http.StatusOK {
+		return false, nil
 	}
 
-	fmt.Println(string(body))
-
-	return false, nil
+	return true, nil
 }

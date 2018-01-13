@@ -9,7 +9,7 @@ import (
 	"os"
 
 	// Note: relative import path required for AppEngine
-	"scanner"
+	"github.com/billglover/chinese-reader/scanner"
 )
 
 type Request struct {

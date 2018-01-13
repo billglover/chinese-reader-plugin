@@ -1,73 +1,82 @@
 <!doctype html>
 <html lang="en">
 <head>
-   <meta charset="utf-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-   
-   <link rel="stylesheet" href="css/bootstrap.min.css">
-   
-   <style>
-      body {
-         padding-top: 5rem;
-      }
-
-      #originalText {
-    border: none;
-    overflow: auto;
-    outline: none;
-
-    -webkit-box-shadow: none;
-    -moz-box-shadow: none;
-    box-shadow: none;
-}
-   </style>
-   
-   <title>Chinese Reader</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+      
+      <link rel="stylesheet" href="css/bootstrap.min.css">
+      
+      <style>
+            body {
+                  padding-top: 5rem;
+            }
+            
+            #originalText {
+                  border: none;
+                  overflow: auto;
+                  outline: none;
+                  
+                  -webkit-box-shadow: none;
+                  -moz-box-shadow: none;
+                  box-shadow: none;
+            }
+      </style>
+      
+      <title>Chinese Reader</title>
 </head>
 <body>
-   
-   <!-- nav bar -->
-   <nav class="nav navbar-dark bg-dark fixed-top">
-      <a class="nav-link navbar-brand" href="#">Chinese Reader</a>
       
-      <ul class="navbar-nav mr-auto">
-         <li class="nav-item">
-            <a class="nav-link" href="https://github.com/billglover/chinese-reader">Code</a>
-         </li>
-      </ul>
+      <!-- nav bar -->
+      <nav class="nav navbar-dark bg-dark fixed-top">
+            <a class="nav-link navbar-brand" href="#">Chinese Reader</a>
+            
+            <ul class="navbar-nav mr-auto">
+                  <li class="nav-item">
+                        <a class="nav-link" href="https://github.com/billglover/chinese-reader">Code</a>
+                  </li>
+            </ul>
+            
+      </nav>
       
-   </nav>
-   
-   <!-- main content -->
-   <div class="container">
-      <h1>Chinese Reader</h1>
-      <p class="lead">Read Chinese text with confidence.</p>
-      
-      <div class="row">
-         <div class="col-6">
-            <h4>Original text</h4>
+      <!-- main content -->
+      <div class="container">
+            <h1>Chinese Reader</h1>
+            <p class="lead">Read Chinese text with confidence.</p>
+            
             <form>
-               <div class="form-group">
-                  <div class="lead bg-light" id="originalText" contenteditable></div>
-               </div>
+                  <div class="form-group row">
+                        <label for="token" class="col-1 col-form-label">Token:</label>
+                        <div class="col-5">
+                              <input class="form-control" type="text" value="paste-user-token-here" id="token">
+                              <div class="invalid-feedback d-none" id="token-feedback">Please choose a username.</div>
+                        </div>
+                  </div>
+                  
+                  <div class="row mt-5">
+                        <div class="col-6">
+                              <h4>Original text</h4>
+                              <form>
+                                    <div class="form-group">
+                                          <div class="lead bg-light" id="originalText" contenteditable></div>
+                                    </div>
+                              </form>
+                        </div>
+                        
+                        <div class="col-6">
+                              <h4>Readable text</h4>
+                              <div class="lead" id="markedUpText" rows="7"></div>
+                        </div>
+                  </div>
+                  
+                  <div class="mt-3"></div>
+                  
+                  <div class="row markup invisible">
+                        <div class="col-12">
+                              <div class="alert alert-primary" role="alert" id="score"></div>
+                        </div>
+                  </div>
             </form>
-         </div>
-
-         <div class="col-6">
-               <h4>Readable text</h4>
-               <div class="lead" id="markedUpText" rows="7"></div>
-            </div>
       </div>
-      
-      <div class="mt-3"></div>
-      
-      <div class="row markup invisible">
-         <div class="col-12">
-            <div class="alert alert-primary" role="alert" id="score"></div>
-         </div>
-      </div>
-      
-   </div>
 </div>
 
 </body>
@@ -78,61 +87,85 @@
 <script src="js/bootstrap.min.js"></script>
 
 <script>
-   //setup before functions
-   var typingTimer;                //timer identifier
-   var doneTypingInterval = 100;  //time in ms, 5 second for example
-   var $input = $("#originalText");
-   
-   //on keyup, start the countdown
-   $input.on('keyup', function () {
-      clearTimeout(typingTimer);
-      typingTimer = setTimeout(doneTyping, doneTypingInterval);
-   });
-   
-   //on keydown, clear the countdown 
-   $input.on('keydown', function () {
-      clearTimeout(typingTimer);
-   });
-   
-   //user is "finished typing," do something
-   function doneTyping () {
-      sendData()
-   }
-   
-   function sendData() {
+      //setup before functions
+      var typingTimer;                //timer identifier
+      var doneTypingInterval = 100;  //time in ms, 5 second for example
+      var $input = $("#originalText");
       
-      var val = $("#originalText").html();
-
-      if ($("#originalText").text().length == 0) {
-         $("#markedUpText").html("");
-         $("#score").html("");
-         $(".markup").addClass("invisible")
-         return
-      }
-
-      var data = {
-         "text": val
-      }
-      
-      fetch("/api", {
-         method: 'post',
-         body: JSON.stringify(data)
-      }).then(function(response) {
-         return response.json();
-      }).then(function(data) {
-         render(data)
-      }).catch(function() {
-         console.log("Booo");
+      //on keyup, start the countdown
+      $input.on('keyup', function () {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(doneTyping, doneTypingInterval);
       });
-   }
-   
-   function render(data) {
-      console.log(data);
-      $("#markedUpText").html(data.markup);
-      $("#score").html("Readability: " + data.readability + "%");
-      $(".markup").removeClass("invisible")
-   }
-   
+      
+      //on keydown, clear the countdown 
+      $input.on('keydown', function () {
+            clearTimeout(typingTimer);
+      });
+      
+      //user is "finished typing," do something
+      function doneTyping () {
+            sendData()
+      }
+      
+      function sendData() {
+            
+            var text = $("#originalText").html();
+            var token = $("#token").val();
+            
+            if ($("#originalText").text().length == 0) {
+                  $("#markedUpText").html("");
+                  $("#score").html("");
+                  $(".markup").addClass("invisible")
+                  return
+            }
+            
+            var data = {
+                  "text": text,
+                  "token": token
+            }
+            
+            // fetch("/api", {
+            //       method: 'post',
+            //       body: JSON.stringify(data)
+            // }).then(function(response) {
+            //       return response.json();
+            // }).then(function(data) {
+            //       render(data)
+            // }).catch(function() {
+            //       console.log();
+            //       console.log("Booo");
+            // });
+
+            fetch("/api", {
+                  method: 'post',
+                  body: JSON.stringify(data)
+            })
+            .then(handleErrors)
+            .then(response => render(response) )
+            .catch(error => console.log(error) );
+      }
+      
+      function render(data) {
+            console.log(data);
+            $("#token-feedback").addClass("d-none");
+            $("#token").removeClass("is-invalid");
+            $("#markedUpText").html(data.markup);
+            $("#score").html("Readability: " + data.readability + "%");
+            $(".markup").removeClass("invisible")
+      }
+      
+      function handleErrors(response) {
+            if (!response.ok) {
+                  if (response.status == 401) {
+                        $("#token-feedback").removeClass("d-none");
+                        $("#token").addClass("is-invalid");
+                  }
+                  throw Error(response.statusText);
+            }
+            return response;
+      }
+      
 </script>
 
 </html>
