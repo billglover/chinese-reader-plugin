@@ -48,7 +48,7 @@
                         <label for="token" class="col-1 col-form-label">Token:</label>
                         <div class="col-5">
                               <input class="form-control" type="text" value="paste-user-token-here" id="token">
-                              <div class="invalid-feedback d-none" id="token-feedback">Please choose a username.</div>
+                              <div class="invalid-feedback d-none" id="token-feedback">Your token is either invalid or has expired.</div>
                         </div>
                   </div>
                   
@@ -89,7 +89,7 @@
 <script>
       //setup before functions
       var typingTimer;                //timer identifier
-      var doneTypingInterval = 100;  //time in ms, 5 second for example
+      var doneTypingInterval = 1000;  //time in ms, 5 second for example
       var $input = $("#originalText");
       
       //on keyup, start the countdown
@@ -124,26 +124,17 @@
                   "text": text,
                   "token": token
             }
-            
-            // fetch("/api", {
-            //       method: 'post',
-            //       body: JSON.stringify(data)
-            // }).then(function(response) {
-            //       return response.json();
-            // }).then(function(data) {
-            //       render(data)
-            // }).catch(function() {
-            //       console.log();
-            //       console.log("Booo");
-            // });
 
             fetch("/api", {
                   method: 'post',
                   body: JSON.stringify(data)
             })
             .then(handleErrors)
-            .then(response => render(response) )
-            .catch(error => console.log(error) );
+            .then(function (response) {
+                  return response.json()
+            })
+            .then(response => render(response))
+            .catch(error => console.log(error));
       }
       
       function render(data) {
