@@ -9,8 +9,11 @@ import (
 
 	"github.com/billglover/uid"
 	"github.com/gorilla/mux"
+	stripe "github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/client"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/urlfetch"
 )
 
 const (
@@ -44,7 +47,7 @@ func init() {
 	r.HandleFunc("/token", PostTokenHandler).Methods("POST")
 	r.HandleFunc("/token/{id}", GetTokenHandler).Methods("GET")
 	r.HandleFunc("/token/{id}", PatchTokenHandler).Methods("PATCH")
-
+	r.HandleFunc("/charge", PostChargeHandler).Methods("POST")
 	http.Handle("/", r)
 }
 
@@ -154,6 +157,34 @@ func PatchTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Infof(ctx, "used token: %s, remaining: %d", resultKey.StringID(), t.Remaining)
 	respondWithJSON(w, http.StatusOK, t)
+}
+
+func PostChargeHandler(rw http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+
+	stripe.Key = "sk_test_ovUaN3GKcKu9SUM94ueaAzxf"
+	token := r.FormValue("stripeToken")
+
+	httpClient := urlfetch.Client(ctx)
+	stripeClient := client.New(stripe.Key, stripe.NewBackends(httpClient))
+
+	// Charge the user's card:
+	params := &stripe.ChargeParams{
+		Amount:   500,
+		Currency: "gbp",
+		Desc:     "Example charge",
+	}
+	params.SetSource(token)
+
+	charge, err := stripeClient.Charges.New(params)
+	//charge, err := charge.New(params)
+	if err != nil {
+		log.Errorf(ctx, err.Error())
+	}
+
+	log.Infof(ctx, charge.Status)
+
+	rw.WriteHeader(http.StatusCreated)
 }
 
 // RespondWithError is a helper function that sets the HTTP status code and returns
