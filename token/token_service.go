@@ -1,7 +1,9 @@
 package token
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -17,18 +19,11 @@ import (
 )
 
 const (
-	// TokenCount specifies the number of uses assigned to new tokens
-	// by default. Changing this value does not impact existing tokens.
+	// TokenCount specifies the number of uses assigned to new tokens.
 	TokenCount int = 1000
 
-	// TokenExpiryYears specifies the number of years after which a token should expire
-	TokenExpiryYears int = 1
-
-	// TokenExpiryMonths specifies the number of months after which a token should expire
-	TokenExpiryMonths int = 0
-
 	// TokenExpiryDays specifies the number of days after which a token should expire
-	TokenExpiryDays int = 0
+	TokenExpiryDays int = 365
 )
 
 // Token is a struct that holds details of a user token. Tokens have a unique
@@ -55,32 +50,15 @@ func init() {
 // and sets the remaining use counter to the default value specified in
 // the constants.
 func PostTokenHandler(w http.ResponseWriter, r *http.Request) {
-
-	id, err := uid.NextStringID()
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-	}
-
-	now := time.Now()
-
-	t := Token{
-		ID:        id,
-		Created:   now,
-		Expires:   now.AddDate(TokenExpiryYears, TokenExpiryMonths, TokenExpiryDays),
-		Remaining: TokenCount,
-	}
-
 	ctx := appengine.NewContext(r)
-	tokenKey := datastore.NewKey(ctx, "tokens", t.ID, 0, nil)
-	resultKey, err := datastore.Put(ctx, tokenKey, &t)
+
+	t, err := createToken(ctx)
 	if err != nil {
 		log.Errorf(ctx, "unable to create new token: %v", err)
 		respondWithError(w, http.StatusInternalServerError, "unable to create new token")
 		return
 	}
 
-	t.Valid = t.IsValid()
-	log.Infof(ctx, "created token: %s", resultKey.StringID())
 	respondWithJSON(w, http.StatusCreated, t)
 }
 
@@ -161,28 +139,13 @@ func PatchTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 func PostChargeHandler(rw http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
+	stripeToken := r.FormValue("stripeToken")
 
-	stripe.Key = "sk_test_ovUaN3GKcKu9SUM94ueaAzxf"
-	token := r.FormValue("stripeToken")
-
-	httpClient := urlfetch.Client(ctx)
-	stripeClient := client.New(stripe.Key, stripe.NewBackends(httpClient))
-
-	// Charge the user's card:
-	params := &stripe.ChargeParams{
-		Amount:   500,
-		Currency: "gbp",
-		Desc:     "Example charge",
-	}
-	params.SetSource(token)
-
-	charge, err := stripeClient.Charges.New(params)
-	//charge, err := charge.New(params)
+	err := chargeUser(ctx, stripeToken)
 	if err != nil {
-		log.Errorf(ctx, err.Error())
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-
-	log.Infof(ctx, charge.Status)
 
 	rw.WriteHeader(http.StatusCreated)
 }
@@ -201,6 +164,64 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
+}
+
+// CreateToken creates an individual token with default values
+func createToken(ctx context.Context) (Token, error) {
+	var t Token
+
+	id, err := uid.NextStringID()
+	if err != nil {
+		return t, err
+	}
+
+	now := time.Now()
+
+	t = Token{
+		ID:        id,
+		Created:   now,
+		Expires:   now.AddDate(0, 0, TokenExpiryDays),
+		Remaining: TokenCount,
+	}
+
+	tokenKey := datastore.NewKey(ctx, "tokens", t.ID, 0, nil)
+	_, err = datastore.Put(ctx, tokenKey, &t)
+	if err != nil {
+		return t, err
+	}
+
+	t.Valid = t.IsValid()
+	return t, nil
+}
+
+// ChargeUser attempts to charge a users card and indicates whether
+// the charge was successful or not.
+func chargeUser(ctx context.Context, stripeToken string) error {
+	stripe.Key = "sk_test_ovUaN3GKcKu9SUM94ueaAzxf"
+
+	// We create a custom client because App Engine
+	httpClient := urlfetch.Client(ctx)
+	stripeClient := client.New(stripe.Key, stripe.NewBackends(httpClient))
+
+	// Charge the user's card:
+	params := &stripe.ChargeParams{
+		Amount:   500,
+		Currency: "gbp",
+		Desc:     "Chinese Reader Token",
+	}
+	params.SetSource(stripeToken)
+
+	charge, err := stripeClient.Charges.New(params)
+	if err != nil {
+		return err
+	}
+
+	if charge.Status != "succeeded" {
+		log.Errorf(ctx, charge.FailMsg)
+		return fmt.Errorf(charge.FailMsg)
+	}
+
+	return nil
 }
 
 // IsValid takes a token and determines whether it is still valid
