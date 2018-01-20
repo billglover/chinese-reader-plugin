@@ -139,6 +139,7 @@ func PatchTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 func PostChargeHandler(rw http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
+<<<<<<< HEAD
 
 	t, err := createToken(ctx)
 	// if token generation fails, return without charging the user
@@ -151,12 +152,21 @@ func PostChargeHandler(rw http.ResponseWriter, r *http.Request) {
 	err = chargeUser(ctx, stripeToken, t.ID)
 	// at this point we need to be very clear to the user whether they
 	// have been charged or not.
+=======
+	stripeToken := r.FormValue("stripeToken")
+
+	err := chargeUser(ctx, stripeToken)
+>>>>>>> 810dad442efea3fcb87f7058fffa9dae45f485ae
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+<<<<<<< HEAD
 	respondWithJSON(rw, http.StatusCreated, t)
+=======
+	rw.WriteHeader(http.StatusCreated)
+>>>>>>> 810dad442efea3fcb87f7058fffa9dae45f485ae
 }
 
 // RespondWithError is a helper function that sets the HTTP status code and returns
@@ -205,7 +215,11 @@ func createToken(ctx context.Context) (Token, error) {
 
 // ChargeUser attempts to charge a users card and indicates whether
 // the charge was successful or not.
+<<<<<<< HEAD
 func chargeUser(ctx context.Context, cardToken, userToken string) error {
+=======
+func chargeUser(ctx context.Context, stripeToken string) error {
+>>>>>>> 810dad442efea3fcb87f7058fffa9dae45f485ae
 	stripe.Key = "sk_test_ovUaN3GKcKu9SUM94ueaAzxf"
 
 	// We create a custom client because App Engine
@@ -218,10 +232,15 @@ func chargeUser(ctx context.Context, cardToken, userToken string) error {
 		Currency: "gbp",
 		Desc:     "Chinese Reader Token",
 	}
+<<<<<<< HEAD
 	params.AddMeta("order_id", userToken)
 	params.SetSource(cardToken)
 
 	// TODO: return more useful charge errors to the caller
+=======
+	params.SetSource(stripeToken)
+
+>>>>>>> 810dad442efea3fcb87f7058fffa9dae45f485ae
 	charge, err := stripeClient.Charges.New(params)
 	if err != nil {
 		return err
