@@ -41,7 +41,7 @@
       <div class="row mt-5">
          <div class="col-12">
             
-            <form action="/charge" method="post" id="payment-form">
+            <form action="/token" method="post" id="payment-form">
                <div class="form-group">
                   <label for="card-element">
                      Credit or debit card
@@ -107,8 +107,35 @@
                hiddenInput.setAttribute('value', token.id);
                form.appendChild(hiddenInput);
                
+               var data = {
+                  "token": token.id
+               }
+               
+               // Trigger a fetch request
+               fetch("/token", {
+                  method: 'post',
+                  body: JSON.stringify(data)
+               })
+               .then(handleErrors)
+               .then(function (response) {
+                  return response.json()
+               })
+               .then(response => console.log(response))
+               .catch(error => console.log(error));
+               
                // Submit the form
-               form.submit();
+               //form.submit();
+            }
+            
+            function handleErrors(response) {
+               if (!response.ok) {
+                  if (response.status == 401) {
+                     $("#token-feedback").removeClass("d-none");
+                     $("#token").addClass("is-invalid");
+                  }
+                  throw Error(response.statusText);
+               }
+               return response;
             }
          }
       </script>

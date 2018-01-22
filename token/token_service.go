@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -24,6 +25,9 @@ const (
 
 	// TokenExpiryDays specifies the number of days after which a token should expire
 	TokenExpiryDays int = 365
+
+	// StripeKey identifies the application to Stripe
+	StripeKey string = "sk_test_ovUaN3GKcKu9SUM94ueaAzxf"
 )
 
 // Token is a struct that holds details of a user token. Tokens have a unique
@@ -37,25 +41,52 @@ type Token struct {
 	Valid     bool      `datastore:"-" json:"valid"`
 }
 
+type Request struct {
+	Token string `json:"token"`
+}
+
 func init() {
 	r := mux.NewRouter()
 	r.HandleFunc("/token", PostTokenHandler).Methods("POST")
 	r.HandleFunc("/token/{id}", GetTokenHandler).Methods("GET")
 	r.HandleFunc("/token/{id}", PatchTokenHandler).Methods("PATCH")
-	r.HandleFunc("/charge", PostChargeHandler).Methods("POST")
 	http.Handle("/", r)
 }
 
 // PostTokenHandler handles an HTTP POST request. It creates a new token
 // and sets the remaining use counter to the default value specified in
 // the constants.
+// TODO: create a response schema
+// TODO: handle errors during payment
 func PostTokenHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
 	t, err := createToken(ctx)
+	// if token generation fails, return without charging the user
 	if err != nil {
-		log.Errorf(ctx, "unable to create new token: %v", err)
-		respondWithError(w, http.StatusInternalServerError, "unable to create new token")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	defer r.Body.Close()
+
+	var mreq Request
+	err = json.Unmarshal(body, &mreq)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	//stripeToken := r.FormValue("stripeToken")
+	stripeToken := mreq.Token
+	err = chargeUser(ctx, stripeToken, t.ID)
+	// at this point we need to be very clear to the user whether they
+	// have been charged or not.
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -64,6 +95,7 @@ func PostTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetTokenHandler handles an HTTP GET request. It returns the token
 // that corresponds to the ID provided in the path.
+// TODO: get token should be marked as internal only
 func GetTokenHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 	var t Token
@@ -91,6 +123,7 @@ func GetTokenHandler(w http.ResponseWriter, r *http.Request) {
 // PatchTokenHandler handles an update to the remaining use counter. It ensures that the
 // counter can only be reduced by 1 on each update. All other update requests are
 // treated as invalid.
+// TODO: patch token should be marked as internal only
 func PatchTokenHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 	var t Token
@@ -135,38 +168,6 @@ func PatchTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Infof(ctx, "used token: %s, remaining: %d", resultKey.StringID(), t.Remaining)
 	respondWithJSON(w, http.StatusOK, t)
-}
-
-func PostChargeHandler(rw http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
-<<<<<<< HEAD
-
-	t, err := createToken(ctx)
-	// if token generation fails, return without charging the user
-	if err != nil {
-		rw.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	stripeToken := r.FormValue("stripeToken")
-	err = chargeUser(ctx, stripeToken, t.ID)
-	// at this point we need to be very clear to the user whether they
-	// have been charged or not.
-=======
-	stripeToken := r.FormValue("stripeToken")
-
-	err := chargeUser(ctx, stripeToken)
->>>>>>> 810dad442efea3fcb87f7058fffa9dae45f485ae
-	if err != nil {
-		rw.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-<<<<<<< HEAD
-	respondWithJSON(rw, http.StatusCreated, t)
-=======
-	rw.WriteHeader(http.StatusCreated)
->>>>>>> 810dad442efea3fcb87f7058fffa9dae45f485ae
 }
 
 // RespondWithError is a helper function that sets the HTTP status code and returns
@@ -215,12 +216,8 @@ func createToken(ctx context.Context) (Token, error) {
 
 // ChargeUser attempts to charge a users card and indicates whether
 // the charge was successful or not.
-<<<<<<< HEAD
 func chargeUser(ctx context.Context, cardToken, userToken string) error {
-=======
-func chargeUser(ctx context.Context, stripeToken string) error {
->>>>>>> 810dad442efea3fcb87f7058fffa9dae45f485ae
-	stripe.Key = "sk_test_ovUaN3GKcKu9SUM94ueaAzxf"
+	stripe.Key = StripeKey
 
 	// We create a custom client because App Engine
 	httpClient := urlfetch.Client(ctx)
@@ -232,15 +229,10 @@ func chargeUser(ctx context.Context, stripeToken string) error {
 		Currency: "gbp",
 		Desc:     "Chinese Reader Token",
 	}
-<<<<<<< HEAD
 	params.AddMeta("order_id", userToken)
 	params.SetSource(cardToken)
 
 	// TODO: return more useful charge errors to the caller
-=======
-	params.SetSource(stripeToken)
-
->>>>>>> 810dad442efea3fcb87f7058fffa9dae45f485ae
 	charge, err := stripeClient.Charges.New(params)
 	if err != nil {
 		return err
