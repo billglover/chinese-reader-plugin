@@ -42,7 +42,7 @@ type Token struct {
 }
 
 type Request struct {
-	Token string `json:"token"`
+	ID string `json:"id"`
 }
 
 func init() {
@@ -81,7 +81,7 @@ func PostTokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//stripeToken := r.FormValue("stripeToken")
-	stripeToken := mreq.Token
+	stripeToken := mreq.ID
 	err = chargeUser(ctx, stripeToken, t.ID)
 	// at this point we need to be very clear to the user whether they
 	// have been charged or not.
