@@ -5,6 +5,7 @@
    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
    
    <link rel="stylesheet" href="css/bootstrap.min.css">
+   <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
    <script src="https://js.stripe.com/v3/"></script>
    
    <style>
@@ -58,7 +59,31 @@
             </form>
             
          </div>
-         
+      </div>
+      
+      <div class="row mt-5">
+         <div class="col-6">
+            <table class="table">
+               <tbody>
+                  <tr id="token_row">
+                     <th scope="row" class="w-25">Token</th>
+                     <td class="w-50"></td>
+                  </tr>
+                  <tr id="expires_row">
+                     <th class="w-25">Expires</th>
+                     <td class="w-50"></td>
+                  </tr>
+                  <tr id="remaining_row">
+                     <th class="w-25">Remaining uses</th>
+                     <td class="w-50"></td>
+                  </tr>
+                  <tr id="payment_row">
+                     <th class="w-25">Payment</th>
+                     <td class="w-50"></td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
       </div>
       
       <!-- Scripts -->
@@ -111,6 +136,7 @@
                })
                .then(output => {
                   removeElement( document.getElementById("payment-form") );
+                  displayToken(output);
                   console.log("Purchase succeeded:", output);
                })
                .catch(err => {
@@ -133,6 +159,12 @@
          
          function removeElement(element) {
             element && element.parentNode && element.parentNode.removeChild(element);
+         }
+
+         function displayToken(response) {
+            $("#token_row>td").text(response.id)
+            $("#expires_row>td").text(response.expires)
+            $("#remaining_row>td").text(response.remaining)
          }
       </script>
       
