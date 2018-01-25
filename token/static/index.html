@@ -44,6 +44,11 @@
             
             <form action="/token" method="post" id="payment-form">
                <div class="form-group">
+                  <label for="email">Email</label>
+                  <input type="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Enter email">
+                  <small id="emailHelp" class="form-text text-muted">Your email address is used to send you a receipt. We don't need it after that and so it is never saved.</small>
+               </div>
+               <div class="form-group">
                   <label for="card-element">
                      Credit or debit card
                   </label>
@@ -123,11 +128,16 @@
             });
             
             const stripeTokenHandler = (token) => {
+
+               const paymentRequest = {
+                  token: token,
+                  email: $("#email").val()
+               }
                
                fetch("/token", {
                   method: "POST",
                   headers: {"Content-Type": "application/json"},
-                  body: JSON.stringify(token)
+                  body: JSON.stringify(paymentRequest)
                })
                .then(response => {
                   if (!response.ok)
@@ -160,7 +170,7 @@
          function removeElement(element) {
             element && element.parentNode && element.parentNode.removeChild(element);
          }
-
+         
          function displayToken(response) {
             $("#token_row>td").text(response.id)
             $("#expires_row>td").text(response.expires)

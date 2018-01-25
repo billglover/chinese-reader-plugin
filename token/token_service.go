@@ -42,6 +42,11 @@ type Token struct {
 }
 
 type Request struct {
+	Token RequestToken `json:"token"`
+	Email string       `json:"email"`
+}
+
+type RequestToken struct {
 	ID string `json:"id"`
 }
 
@@ -81,8 +86,9 @@ func PostTokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//stripeToken := r.FormValue("stripeToken")
-	stripeToken := mreq.ID
-	err = chargeUser(ctx, stripeToken, t.ID)
+	stripeToken := mreq.Token.ID
+	email := mreq.Email
+	err = chargeUser(ctx, stripeToken, email, t.ID)
 	// at this point we need to be very clear to the user whether they
 	// have been charged or not.
 	if err != nil {
@@ -216,7 +222,7 @@ func createToken(ctx context.Context) (Token, error) {
 
 // ChargeUser attempts to charge a users card and indicates whether
 // the charge was successful or not.
-func chargeUser(ctx context.Context, cardToken, userToken string) error {
+func chargeUser(ctx context.Context, cardToken, email, userToken string) error {
 	stripe.Key = StripeKey
 
 	// We create a custom client because App Engine
@@ -228,6 +234,7 @@ func chargeUser(ctx context.Context, cardToken, userToken string) error {
 		Amount:   500,
 		Currency: "gbp",
 		Desc:     "Chinese Reader Token",
+		Email:    email,
 	}
 	params.AddMeta("order_id", userToken)
 	params.SetSource(cardToken)
@@ -237,6 +244,8 @@ func chargeUser(ctx context.Context, cardToken, userToken string) error {
 	if err != nil {
 		return err
 	}
+
+	log.Infof(ctx, "%+v\n", charge)
 
 	if charge.Status != "succeeded" {
 		log.Errorf(ctx, charge.FailMsg)
