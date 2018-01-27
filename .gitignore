@@ -15,3 +15,6 @@
 
 # Binaries
 chinese-reader
+
+# OSX specifically
+.DS_Store
