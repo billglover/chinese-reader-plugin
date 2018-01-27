@@ -85,7 +85,6 @@ func PostTokenHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	//stripeToken := r.FormValue("stripeToken")
 	stripeToken := mreq.Token.ID
 	email := mreq.Email
 	err = chargeUser(ctx, stripeToken, email, t.ID)
