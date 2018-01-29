@@ -39,8 +39,9 @@
          </div>
       </div>
       
-      <div class="row mt-5">
-         <div class="col-12">
+      <!-- Payment Form -->
+      <div class="row mt-5" id="payment_row">
+         <div class="col-12 col-md-6">
             
             <form action="/token" method="post" id="payment-form">
                <div class="form-group">
@@ -66,117 +67,134 @@
          </div>
       </div>
       
-      <div class="row mt-5">
-         <div class="col-6">
-            <table class="table">
-               <tbody>
-                  <tr id="token_row">
-                     <th scope="row" class="w-25">Token</th>
-                     <td class="w-50"></td>
-                  </tr>
-                  <tr id="expires_row">
-                     <th class="w-25">Expires</th>
-                     <td class="w-50"></td>
-                  </tr>
-                  <tr id="remaining_row">
-                     <th class="w-25">Remaining uses</th>
-                     <td class="w-50"></td>
-                  </tr>
-                  <tr id="payment_row">
-                     <th class="w-25">Payment</th>
-                     <td class="w-50"></td>
-                  </tr>
-               </tbody>
-            </table>
-         </div>
-      </div>
-      
-      <!-- Scripts -->
-      <script>
-         window.onload = function() {
-            const stripe = Stripe('pk_test_UU8iuIS37wyRa80qxOrtuUJ8');
-            const elements = stripe.elements();
+      <!-- Token -->
+      <div class="row d-none" id="success_row">
+         <div class="col-12">
+            <div class="alert alert-success" role="alert">
+               <h4 class="alert-heading">Thank you!</h4>
+               <p>Thank you for purchasing a token. Your token is displayed 
+                  below and is now available for use.</p>
+                  <p>Please make a note of your token as we do not keep any
+                     personal information about you and are unable to identify
+                     or recover lost tokens.</p>
+                     <hr>
+                     <p class="mb-0">Your receipt will be emailed to the address
+                        you provided.
+                     </p>
+                  </div>
+               </div>
+            </div>
+            <div class="row mt-5 d-none" id="token_row">
+               <div class="col-12 col-md-6">
+                  <table class="table">
+                     <tbody>
+                        <tr id="token_row">
+                           <th scope="row" class="w-25">Token</th>
+                           <td class="w-50"></td>
+                        </tr>
+                        <tr id="expires_row">
+                           <th class="w-25">Expires</th>
+                           <td class="w-50"></td>
+                        </tr>
+                        <tr id="remaining_row">
+                           <th class="w-25">Remaining uses</th>
+                           <td class="w-50"></td>
+                        </tr>
+                        <tr id="payment_row">
+                           <th class="w-25">Payment</th>
+                           <td class="w-50"></td>
+                        </tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
             
-            // Custom styling can be passed to options when creating an Element.
-            const classes = {
-               base: 'form-control',
-               invalid: 'form-control is-invalid',
-            }
-            
-            // Create an instance of the card Element
-            const card = elements.create('card', {classes: classes});
-            
-            
-            
-            // Add an instance of the card Element into the `card-element`
-            card.mount('#card-element'); 
-            
-            // Create a token or display an error when the form is submitted.
-            const form = document.getElementById('payment-form');
-            form.addEventListener('submit', async (event) => {
-               
-               // override standard form behaviour
-               event.preventDefault();
-               
-               const {token, error} = await stripe.createToken(card);
-               if (error) {
-                  const errorElement = document.getElementById('card-errors');
-                  errorElement.textContent = error.message;
-               } else {
-                  stripeTokenHandler(token);
-               }
-            });
-            
-            const stripeTokenHandler = (token) => {
-
-               const paymentRequest = {
-                  token: token,
-                  email: $("#email").val()
-               }
-               
-               fetch("/token", {
-                  method: "POST",
-                  headers: {"Content-Type": "application/json"},
-                  body: JSON.stringify(paymentRequest)
-               })
-               .then(response => {
-                  if (!response.ok)
-                  throw response;
-                  return response.json();
-               })
-               .then(output => {
-                  removeElement( document.getElementById("payment-form") );
-                  displayToken(output);
-                  console.log("Purchase succeeded:", output);
-               })
-               .catch(err => {
-                  console.log("Purchase failed:", err);
-               })
-               
-            }
-            
-            function handleErrors(response) {
-               if (!response.ok) {
-                  if (response.status == 401) {
-                     $("#token-feedback").removeClass("d-none");
-                     $("#token").addClass("is-invalid");
+            <!-- Scripts -->
+            <script>
+               window.onload = function() {
+                  const stripe = Stripe('pk_test_UU8iuIS37wyRa80qxOrtuUJ8');
+                  const elements = stripe.elements();
+                  
+                  // Custom styling can be passed to options when creating an Element.
+                  const classes = {
+                     base: 'form-control',
+                     invalid: 'form-control is-invalid',
                   }
-                  throw Error(response.statusText);
+                  
+                  // Create an instance of the card Element
+                  const card = elements.create('card', {classes: classes});
+                  
+                  // Add an instance of the card Element into the `card-element`
+                  card.mount('#card-element'); 
+                  
+                  // Create a token or display an error when the form is submitted.
+                  const form = document.getElementById('payment-form');
+                  form.addEventListener('submit', async (event) => {
+                     
+                     // override standard form behaviour
+                     event.preventDefault();
+                     
+                     const {token, error} = await stripe.createToken(card);
+                     if (error) {
+                        const errorElement = document.getElementById('card-errors');
+                        errorElement.textContent = error.message;
+                     } else {
+                        stripeTokenHandler(token);
+                     }
+                  });
+                  
+                  const stripeTokenHandler = (token) => {
+                     
+                     const paymentRequest = {
+                        token: token,
+                        email: $("#email").val()
+                     }
+                     
+                     fetch("/token", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify(paymentRequest)
+                     })
+                     .then(response => {
+                        if (!response.ok)
+                        throw response;
+                        return response.json();
+                     })
+                     .then(output => {
+                        displayToken(output);
+                        console.log("Purchase succeeded:", output);
+                     })
+                     .catch(err => {
+                        console.log("Purchase failed:", err);
+                     })
+                     
+                  }
+                  
+                  function handleErrors(response) {
+                     if (!response.ok) {
+                        if (response.status == 401) {
+                           $("#token-feedback").removeClass("d-none");
+                           $("#token").addClass("is-invalid");
+                        }
+                        throw Error(response.statusText);
+                     }
+                     return response;
+                  }
                }
-               return response;
-            }
-         }
-         
-         function removeElement(element) {
-            element && element.parentNode && element.parentNode.removeChild(element);
-         }
-         
-         function displayToken(response) {
-            $("#token_row>td").text(response.id)
-            $("#expires_row>td").text(response.expires)
-            $("#remaining_row>td").text(response.remaining)
-         }
-      </script>
-      
-   </body>
-   </html>
+               
+               function removeElement(element) {
+                  element && element.parentNode && element.parentNode.removeChild(element);
+               }
+               
+               function displayToken(response) {
+                  removeElement( document.getElementById("payment_row") );
+                  $("#token_row").removeClass("d-none");
+                  $("#success_row").removeClass("d-none");
+                  $("#token_row>td").text(response.id)
+                  $("#expires_row>td").text(response.expires)
+                  $("#remaining_row>td").text(response.remaining)
+               }
+            </script>
+            
+         </body>
+         </html>
